@@ -13,6 +13,9 @@
     "rootDir": "./src",
     "outDir": "./dist"
   },
-  "include": ["src/**/*.ts"],
+  "include": [
+    "src/**/*.ts",
+    "trigger.config.ts"
+  ],
   "exclude": ["node_modules"]
 }
