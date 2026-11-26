@@ -1,9 +1,8 @@
 import { Hono } from 'hono';
 import { timingSafeEqual } from 'node:crypto';
-import { createGoogle } from '@ai-sdk/google';
 import { APICallError, generateText } from 'ai';
+import { createGeminiModel } from './gemini.js';
 const telegram = new Hono();
-const DEFAULT_GEMINI_MODEL = 'gemini-3.5-flash-lite';
 const RATE_LIMIT_REPLY = "I'm a bit busy right now. Please try again shortly.";
 const GENERATION_ERROR_REPLY = "Sorry, I couldn't generate a reply right now. Please try again shortly.";
 const isRecord = (value) => typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -53,12 +52,10 @@ telegram.post('/webhook', async (c) => {
         console.error('GOOGLE_GENERATIVE_AI_API_KEY is not configured');
         return c.json({ ok: false, error: 'Google Gemini API key is not configured' }, 500);
     }
-    const modelName = process.env.GEMINI_MODEL?.trim() || DEFAULT_GEMINI_MODEL;
     let reply;
     try {
-        const google = createGoogle({ apiKey: googleApiKey });
         const result = await generateText({
-            model: google(modelName),
+            model: createGeminiModel(),
             instructions: 'You are a helpful assistant replying in Telegram. Keep responses concise and in plain text.',
             prompt: text,
             maxOutputTokens: 256,
