@@ -1,5 +1,5 @@
 import { APICallError, generateText } from 'ai'
-import { task } from '@trigger.dev/sdk'
+import { inngest } from './client.js'
 import { createGeminiModel } from '../gemini.js'
 
 export const generateGeminiTestResponse = async (prompt: string) => {
@@ -44,10 +44,17 @@ export const generateGeminiTestResponse = async (prompt: string) => {
   }
 }
 
-export const geminiTestTask = task({
-  id: 'test-gemini',
-  maxDuration: 120,
-  retry: { maxAttempts: 1 },
-  run: async ({ prompt }: { prompt: string }) =>
-    generateGeminiTestResponse(prompt),
-})
+export const geminiTestFunction = inngest.createFunction(
+  {
+    id: 'test-gemini',
+    triggers: { event: 'test/gemini.requested' },
+  },
+  async ({ event }) => {
+    const prompt = event.data.prompt
+    if (typeof prompt !== 'string') {
+      throw new Error('Gemini test event prompt must be a string')
+    }
+
+    return generateGeminiTestResponse(prompt)
+  },
+)
