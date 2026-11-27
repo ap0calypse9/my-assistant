@@ -36,6 +36,111 @@
       "skillPath": "skills/hono-void/SKILL.md",
       "computedHash": "c3204abed1d0a65d245080431f683650171e685f2b81ab86522547d1691aa4ea"
     },
+    "inngest-agent-evals": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-agent-evals/SKILL.md",
+      "computedHash": "969343b5413a7a85368457d37c7dfb58f9d36239d009f3e13bd208e8e62915af"
+    },
+    "inngest-agents": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-agents/SKILL.md",
+      "computedHash": "344dc61ec964349159d208a4d0675a62d04258733002a212496645fc47c8345f"
+    },
+    "inngest-api": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-api/SKILL.md",
+      "computedHash": "ad17fd82aa8f2ab9ff7dc6616587cf7852376f7d11768267b5d2b97f3d7c96d9"
+    },
+    "inngest-api-cli": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-api-cli/SKILL.md",
+      "computedHash": "c3a6070033aa2ebff8a38272d407db77cc3d45054428d36ea5f0650c77757580"
+    },
+    "inngest-brownfield-audit": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-brownfield-audit/SKILL.md",
+      "computedHash": "c49f1e6b705e1244ce0286cda57f22c26049b491cfb6082f381b19ac2fc3bc5e"
+    },
+    "inngest-cli": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-cli/SKILL.md",
+      "computedHash": "5e536fad0d2940153795b05b111e9baf5736fc11b9bb5878ce649095f4d7e62f"
+    },
+    "inngest-cloud": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-cloud/SKILL.md",
+      "computedHash": "431a5691a36e3f055fef93776290be5230bb17b71f2f40fc08ca729d9b6e4176"
+    },
+    "inngest-durable-functions": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-durable-functions/SKILL.md",
+      "computedHash": "92fd58461d54e7a95788799addae49a6488cafb6ba19dfb1341fc19245a0b483"
+    },
+    "inngest-events": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-events/SKILL.md",
+      "computedHash": "1015324f8181e2548eacd5070b677355e0fd3432c411cb339dd63521b0fefe8e"
+    },
+    "inngest-flow-control": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-flow-control/SKILL.md",
+      "computedHash": "5d500fb080d833890ba2a1e32008979a2bb3fe649523b59b0eeed4f9896f7a50"
+    },
+    "inngest-middleware": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-middleware/SKILL.md",
+      "computedHash": "10c4197e9b1e6598212e94ed2d0892145c5ada5966721f8b65758e1530c469c6"
+    },
+    "inngest-realtime": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-realtime/SKILL.md",
+      "computedHash": "a7c5681125764c7d9637bebd42fcf4bca6f18d6410b98b295b2b99fe87a8ca2d"
+    },
+    "inngest-setup": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-setup/SKILL.md",
+      "computedHash": "9b8d28447e175ec5390af8e5aecf422df2481dfc77a3c13f038c77f43fbac0e6"
+    },
+    "inngest-steps": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-steps/SKILL.md",
+      "computedHash": "72f68b1f01e081eadbee562afdbc1c0dd987cdb9c944baecb21e6dc100e5e7c0"
+    },
+    "inngest-v3-v4-migration": {
+      "source": "inngest/inngest-skills",
+      "commit": "082798a627bbe9c3ed3a6638a9f56116a035f122",
+      "sourceType": "github",
+      "skillPath": "skills/inngest-v3-v4-migration/SKILL.md",
+      "computedHash": "7d1e329346334c9b9d250c6f9dfbb62ce0a2392709db158f298777e1a746a233"
+    },
     "migrate-ai-sdk-v6-to-v7": {
       "source": "vercel/ai",
       "commit": "8956ca55ed9c31b4b7680621a10ad0269f9629b1",
