@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { test } from 'node:test'
+import { SdkError } from 'firecrawl'
 import {
   createWebTools,
   MAX_SCRAPED_CONTENT_CHARS,
@@ -97,24 +98,90 @@ test('does not make more than the per-reply web lookup budget', async () => {
   assert.match(overBudget.error, /limit/)
 })
 
-test('reports Firecrawl failures without throwing from the tool', async () => {
+test('logs Firecrawl SDK status, response message, and cause without headers', async (t) => {
   const state = makeState()
+  const originalKey = process.env.FIRECRAWL_API_KEY
+  process.env.FIRECRAWL_API_KEY = 'test-firecrawl-secret'
+  t.after(() => {
+    if (originalKey === undefined) {
+      delete process.env.FIRECRAWL_API_KEY
+    } else {
+      process.env.FIRECRAWL_API_KEY = originalKey
+    }
+  })
+
+  const cause = Object.assign(new Error('HTTP request failed'), {
+    name: 'AxiosError',
+    config: {
+      headers: {
+        Authorization: 'Bearer test-firecrawl-secret',
+        'X-Request-Id': 'private-header',
+      },
+    },
+  })
+  const sdkError = Object.assign(
+    new SdkError(
+      'Unexpected HTTP client error',
+      402,
+      'CREDITS_EXHAUSTED',
+      { message: 'Firecrawl credits exhausted' },
+    ),
+    { cause },
+  )
   const client = {
     search: async () => {
-      throw new Error('credits exhausted')
+      throw sdkError
     },
     scrape: async () => ({ markdown: '' }),
   }
-  const originalError = console.error
-  console.error = () => {}
+  const loggedErrors = []
+  t.mock.method(console, 'error', (...args) => loggedErrors.push(args))
 
-  try {
-    const tools = createWebTools(client, state)
-    const result = await tools.searchWeb.execute({ query: 'current news' })
+  const tools = createWebTools(client, state)
+  const result = await tools.searchWeb.execute({ query: 'current news' })
 
-    assert.equal(state.failed, true)
-    assert.match(result.error, /Web access is unavailable/)
-  } finally {
-    console.error = originalError
+  assert.equal(state.failed, true)
+  assert.match(result.error, /Web access is unavailable/)
+  assert.equal(loggedErrors.length, 1)
+  assert.equal(loggedErrors[0][0], 'Web lookup failed')
+  assert.equal(loggedErrors[0][1].statusCode, 402)
+  assert.equal(loggedErrors[0][1].errorName, 'FirecrawlSdkError')
+  assert.equal(
+    loggedErrors[0][1].responseBodyMessage,
+    'Firecrawl credits exhausted',
+  )
+  assert.deepEqual(loggedErrors[0][1].cause, {
+    name: 'AxiosError',
+    message: 'HTTP request failed',
+  })
+  const serializedLog = JSON.stringify(loggedErrors)
+  assert.equal(serializedLog.includes('test-firecrawl-secret'), false)
+  assert.equal(serializedLog.includes('Authorization'), false)
+  assert.equal(serializedLog.includes('private-header'), false)
+})
+
+test('handles an SDK error response returned instead of thrown', async (t) => {
+  const state = makeState()
+  const loggedErrors = []
+  t.mock.method(console, 'error', (...args) => loggedErrors.push(args))
+  const client = {
+    search: async () => ({
+      success: false,
+      status: 402,
+      error: 'Firecrawl credits exhausted',
+    }),
+    scrape: async () => ({ markdown: '' }),
   }
+  const tools = createWebTools(client, state)
+
+  const result = await tools.searchWeb.execute({ query: 'current news' })
+
+  assert.equal(state.failed, true)
+  assert.match(result.error, /Web access is unavailable/)
+  assert.equal(loggedErrors[0][1].statusCode, 402)
+  assert.equal(loggedErrors[0][1].errorName, 'FirecrawlResponseError')
+  assert.equal(
+    loggedErrors[0][1].responseBodyMessage,
+    'Firecrawl credits exhausted',
+  )
 })

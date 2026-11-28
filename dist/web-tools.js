@@ -84,10 +84,110 @@ const validatePublicUrl = (value) => {
     return url.href;
 };
 const excerpt = (value, limit) => typeof value === 'string' ? value.slice(0, limit) : '';
+const getResponseBodyMessage = (value, depth = 0) => {
+    if (depth > 4)
+        return undefined;
+    if (typeof value === 'string')
+        return value;
+    if (!isRecord(value))
+        return undefined;
+    for (const key of ['message', 'error', 'detail', 'title']) {
+        const candidate = value[key];
+        if (typeof candidate === 'string' && candidate.length > 0)
+            return candidate;
+        const nestedMessage = getResponseBodyMessage(candidate, depth + 1);
+        if (nestedMessage)
+            return nestedMessage;
+    }
+    return getResponseBodyMessage(value.details, depth + 1);
+};
+const getErrorStatusCode = (error) => {
+    if (!isRecord(error))
+        return undefined;
+    const cause = isRecord(error.cause) ? error.cause : undefined;
+    const candidates = [
+        error,
+        error.response,
+        cause,
+        cause?.response,
+    ];
+    for (const candidate of candidates) {
+        if (!isRecord(candidate))
+            continue;
+        for (const key of ['status', 'statusCode']) {
+            if (typeof candidate[key] === 'number')
+                return candidate[key];
+        }
+    }
+    return undefined;
+};
+const redactSecret = (value) => {
+    const key = process.env.FIRECRAWL_API_KEY?.trim();
+    const truncated = excerpt(value, 500);
+    return key ? truncated.replaceAll(key, '[REDACTED]') : truncated;
+};
+const getCauseSummary = (error) => {
+    if (!isRecord(error) || error.cause == null)
+        return undefined;
+    const cause = error.cause;
+    if (cause instanceof Error) {
+        return {
+            name: redactSecret(cause.name),
+            message: redactSecret(cause.message),
+        };
+    }
+    if (isRecord(cause)) {
+        return {
+            name: typeof cause.name === 'string' ? redactSecret(cause.name) : undefined,
+            message: typeof cause.message === 'string'
+                ? redactSecret(cause.message)
+                : undefined,
+            code: typeof cause.code === 'string' ? redactSecret(cause.code) : undefined,
+        };
+    }
+    return typeof cause === 'string' ? redactSecret(cause) : { type: typeof cause };
+};
+const throwForErrorResponse = (value) => {
+    if (!isRecord(value) ||
+        (value.success !== false && value.error == null)) {
+        return;
+    }
+    const error = new Error(getResponseBodyMessage(value) ?? 'Firecrawl returned an error response');
+    error.name =
+        typeof value.name === 'string' ? value.name : 'FirecrawlResponseError';
+    Object.assign(error, {
+        status: typeof value.status === 'number'
+            ? value.status
+            : typeof value.statusCode === 'number'
+                ? value.statusCode
+                : undefined,
+        details: value,
+        cause: value.cause,
+    });
+    throw error;
+};
 const logWebFailure = (operation, error) => {
+    const record = isRecord(error) ? error : undefined;
+    const cause = record && isRecord(record.cause) ? record.cause : undefined;
+    const response = record && isRecord(record.response) ? record.response : undefined;
+    const causeResponse = cause && isRecord(cause.response) ? cause.response : undefined;
+    const responseBodyMessage = getResponseBodyMessage(record?.details) ??
+        getResponseBodyMessage(isRecord(response) ? response.data : undefined) ??
+        getResponseBodyMessage(isRecord(causeResponse) ? causeResponse.data : undefined) ??
+        getResponseBodyMessage(cause?.details) ??
+        getResponseBodyMessage(record?.message);
+    const causeSummary = getCauseSummary(error);
     console.error('Web lookup failed', {
         operation,
-        message: error instanceof Error ? error.message.slice(0, 200) : 'Unknown error',
+        statusCode: getErrorStatusCode(error) ?? null,
+        errorName: typeof record?.name === 'string' ? redactSecret(record.name) : 'Unknown',
+        message: typeof record?.message === 'string'
+            ? redactSecret(record.message)
+            : 'Unknown error',
+        responseBodyMessage: responseBodyMessage
+            ? redactSecret(responseBodyMessage)
+            : null,
+        ...(causeSummary === undefined ? {} : { cause: causeSummary }),
     });
 };
 export const createWebTools = (client, state) => {
@@ -115,6 +215,7 @@ export const createWebTools = (client, state) => {
             inputSchema: searchInputSchema,
             execute: ({ query }) => run('search', async (webClient) => {
                 const result = await webClient.search(query, { limit: MAX_SEARCH_RESULTS });
+                throwForErrorResponse(result);
                 return {
                     results: (result.web ?? [])
                         .slice(0, MAX_SEARCH_RESULTS)
@@ -139,6 +240,7 @@ export const createWebTools = (client, state) => {
                     formats: ['markdown'],
                     onlyMainContent: true,
                 });
+                throwForErrorResponse(result);
                 return {
                     url: pageUrl,
                     content: excerpt(result.markdown, MAX_SCRAPED_CONTENT_CHARS),
@@ -152,7 +254,7 @@ export const createWebClient = (apiKey) => {
     return key
         ? new Firecrawl({
             apiKey: key,
-            maxRetries: 0,
+            maxRetries: 1,
             timeoutMs: FIRECRAWL_TIMEOUT_MS,
         })
         : undefined;
