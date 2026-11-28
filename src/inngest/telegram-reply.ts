@@ -53,34 +53,66 @@ const isTelegramMessage = (value: unknown): value is TelegramMessage => {
   )
 }
 
-const generateReply = async (
+export const generateReply = async (
   history: ChatMessage[],
   prompt: string,
+  modelOverride: ReturnType<typeof createGeminiModel> | undefined = undefined,
+  webClient = createWebClient(process.env.FIRECRAWL_API_KEY),
 ): Promise<string> => {
   const webToolState: WebToolState = { calls: 0, failed: false }
-  const tools = createWebTools(
-    createWebClient(process.env.FIRECRAWL_API_KEY),
-    webToolState,
-  )
+  const tools = createWebTools(webClient, webToolState)
+  const messages = [
+    ...history.map(({ role, text }) => ({ role, content: text })),
+    { role: 'user' as const, content: prompt },
+  ]
 
   try {
+    const model = modelOverride ?? createGeminiModel()
     const result = await generateText({
-      model: createGeminiModel(),
+      model,
       instructions: SYSTEM_INSTRUCTIONS,
-      messages: [
-        ...history.map(({ role, text }) => ({ role, content: text })),
-        { role: 'user', content: prompt },
-      ],
+      messages,
       tools,
-      stopWhen: isStepCount(3),
+      stopWhen: isStepCount(4),
       maxOutputTokens: 256,
       maxRetries: 0,
     })
     const reply = result.text.trim()
 
     if (!reply) {
-      console.error('Gemini text generation returned empty text')
-      return addWebFailureNote(GENERATION_ERROR_REPLY, webToolState.failed)
+      logEmptyGeneratedText(result, 'initial')
+      if (result.toolResults.length === 0) {
+        return addWebFailureNote(GENERATION_ERROR_REPLY, webToolState.failed)
+      }
+
+      const previousResult = result
+      const recoveryResult = await generateText({
+        model,
+        instructions: SYSTEM_INSTRUCTIONS,
+        messages: [
+          ...messages,
+          ...previousResult.responseMessages,
+          {
+            role: 'user',
+            content:
+              'Use the tool results above to answer the original request. If a lookup failed, say so briefly.',
+          },
+        ],
+        maxOutputTokens: 256,
+        maxRetries: 0,
+      })
+
+      const recoveredReply = recoveryResult.text.trim()
+      if (!recoveredReply) {
+        logEmptyGeneratedText(
+          recoveryResult,
+          'tool-result-recovery',
+          previousResult,
+        )
+        return addWebFailureNote(GENERATION_ERROR_REPLY, webToolState.failed)
+      }
+
+      return addWebFailureNote(recoveredReply, webToolState.failed)
     }
 
     return addWebFailureNote(reply, webToolState.failed)
@@ -97,6 +129,31 @@ const generateReply = async (
       webToolState.failed,
     )
   }
+}
+
+const logEmptyGeneratedText = (
+  result: {
+    finishReason: string
+    steps: unknown[]
+    toolCalls: unknown[]
+    toolResults: unknown[]
+  },
+  phase: string,
+  previousResult?: {
+    steps: unknown[]
+    toolCalls: unknown[]
+    toolResults: unknown[]
+  },
+) => {
+  const results = previousResult ? [previousResult, result] : [result]
+
+  console.error('Gemini text generation returned empty text', {
+    phase,
+    finishReason: result.finishReason,
+    stepsUsed: results.reduce((total, item) => total + item.steps.length, 0),
+    hadToolCalls: results.some((item) => item.toolCalls.length > 0),
+    hadToolResults: results.some((item) => item.toolResults.length > 0),
+  })
 }
 
 const addWebFailureNote = (reply: string, webLookupFailed: boolean) => {
