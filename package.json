@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "INNGEST_DEV=1 node --env-file-if-exists=.env ./node_modules/tsx/dist/cli.mjs watch src/index.ts",
     "inngest:dev": "npx --ignore-scripts=false inngest-cli@latest dev --no-discovery -u http://localhost:3000/api/inngest",
+    "daytona:hello-world": "node --env-file-if-exists=.env --import tsx src/daytona-hello-world.ts",
     "db:migrate:telegram-history": "node --env-file-if-exists=.env scripts/migrate-telegram-history.mjs",
     "build": "tsc",
     "start": "node --env-file-if-exists=.env dist/index.js",
@@ -11,6 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/google": "^4.0.126",
+    "@daytona/sdk": "^2.3.0",
     "@hono/node-server": "^2.1.3",
     "@neon/config": "^1.14.6",
     "@neon/env": "^2.1.9",
