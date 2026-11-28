@@ -15,6 +15,7 @@ const configureEnv = (t, model) => {
     'GEMINI_MODEL',
     'TELEGRAM_HISTORY_LIMIT',
     'TELEGRAM_HISTORY_CHAR_BUDGET',
+    'FIRECRAWL_API_KEY',
   ]
   const originalEnv = new Map(keys.map((key) => [key, process.env[key]]))
 
@@ -32,6 +33,7 @@ const configureEnv = (t, model) => {
     TELEGRAM_BOT_TOKEN: 'test-telegram-token',
     TELEGRAM_WEBHOOK_SECRET: 'test-webhook-secret',
     GOOGLE_GENERATIVE_AI_API_KEY: 'test-google-api-key',
+    FIRECRAWL_API_KEY: 'test-firecrawl-api-key',
   })
   delete process.env.TELEGRAM_HISTORY_LIMIT
   delete process.env.TELEGRAM_HISTORY_CHAR_BUDGET
@@ -70,6 +72,12 @@ const mockFetch = (t, model, makeGeminiResponse, history = []) => {
       assert.equal(headers.get('Authorization'), null)
 
       const request = JSON.parse(String(init.body))
+      assert.deepEqual(
+        request.tools.flatMap(({ functionDeclarations }) =>
+          functionDeclarations.map(({ name }) => name),
+        ),
+        ['searchWeb', 'readWebPage'],
+      )
       assert.deepEqual(
         request.contents.map(({ role, parts }) => ({
           role,
